@@ -35,5 +35,36 @@ pipeline {
                 ])
             }
         }
+        stage('Package') {
+            steps {
+                sh './gradlew build'
+            }
+        }
+        stage('Docker build') {
+            steps {
+                sh "docker build -t dbepcepk/calculator ."
+            }
+        }
+        stage('Docker push') {
+            steps {
+                sh 'docker push dbepcepk/calculator'
+            }
+        }
+        stage('Deploy to staging') {
+            steps {
+                sh 'docker run -d --rm -p 8765:8080 --name calculator dbepcepk/calculator'
+            }
+        }
+        stage('Acceptance tests') {
+            steps {
+                sleep 60
+                sh 'chmod +x acceptance_test.sh && ./acceptance_test.sh'
+            }
+        }
+    }
+    post {
+        always {
+            sh 'docker stop calculator'
+        }
     }
 }
